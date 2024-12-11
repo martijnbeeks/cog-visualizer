@@ -5,9 +5,7 @@ from PIL import Image
 from matplotlib import pyplot as plt
 import numpy as np
 
-# st.set_page_config(page_title="Enhanced Calculation App", layout="wide")
-# st.title('📐 Center of Gravity distribution app')
-# Add company logo and banner
+
 col1, col2 = st.columns([1, 5])
 with col1:
     st.image("app/high_eye.jpeg", width=100)
@@ -16,8 +14,7 @@ with col2:
 
 # Sidebar for inputs
 with st.sidebar:
-    
-    component = st.write("Payload details")
+    st.write("Payload details")
     weight = st.number_input('Weight (kg)', min_value=0.0, format="%.2f")
     arm = st.number_input('Arm (m)', format="%.2f")
 
@@ -40,9 +37,7 @@ with st.sidebar:
     
 
 # Main content
-# st.header('Results')
 df = st.session_state.df.copy()
-# if not df.empty and df['Weight'].notnull().all() and df['Arm'].notnull().all():
 # Perform calculations
 df['Moment'] = df['Weight (kg)'] * df['Arm (m)']
 total_weight = df['Weight (kg)'].sum()
@@ -51,37 +46,38 @@ center_of_gravity = total_moment / total_weight * 1000 if total_weight != 0 else
 
 
 # Display calculation results in columns
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3 = st.columns(3)
 col1.metric(label="Total Weight (kg)", value=f"{total_weight:.2f}")
 col2.metric(label="Total Moment (m*Kg)", value=f"{total_moment:.2f}")
 col3.metric(label="Center of Gravity [mm]", value=f"{center_of_gravity:.2f}", help="Recommended position")
-# col4.metric(label="Distance of camera", value=f"{distance:.2f}", delta="4%", help="Recommended distance")
 
 # Visual representation using Plotly
-# add some space
 st.write("")
 st.write("")
 st.subheader('Visualization')
 
 if center_of_gravity > 0:
-    st.metric(label="Move camera left (mm)", value=f"{center_of_gravity:.2f}", help="Recommended distance")
-    move_distance = -1 * center_of_gravity
-    move_text = "Move camera to the left"
-else:
     st.metric(label="Move camera right (mm)", value=f"{center_of_gravity:.2f}", help="Recommended distance")
     move_distance = center_of_gravity
-    move_text = "Move camera to the left"
+    move_text = f"Move camera to the right: {move_distance:.2f}"
+else:
+    st.metric(label="Move camera left (mm)", value=f"{center_of_gravity:.2f}", help="Recommended distance")
+    move_distance = -1 * center_of_gravity
+    move_text = f"Move camera to the left: {move_distance:.2f}"
 
 
 
 image1_path = "app/drone.png"
 image2_path = "app/camera.png"
+image3_path = "app/cog.png"
 image1 = Image.open(image1_path)
 image2 = Image.open(image2_path)
+image3 = Image.open(image3_path)
 
 # Convert images to numpy arrays
 image1_array = np.asarray(image1)
 image2_array = np.asarray(image2)
+image3_array = np.asarray(image3)
 
 # Create the Plotly figure
 fig = go.Figure()
@@ -106,20 +102,64 @@ fig.add_trace(
     ),
 )
 
-# Add small leged with moved distance
+# Add the third image with slight transparency and a slight offset for the overlay
+fig.add_trace(
+    go.Image(
+        z=image3_array,
+        # opacity=0.6,  # Slight transparency
+        dx=.04,  # Adjust x position
+        dy=.04,   # Adjust y position
+        x0=300,  # Adjust x position
+        y0=217     # Adjust y position
+    ),
+)
 
+# Add the fourth image with slight transparency and a slight offset for the overlay
+fig.add_trace(
+    go.Image(
+        z=image3_array,
+        # opacity=0.6,  # Slight transparency
+        dx=.04,  # Adjust x position
+        dy=.04,   # Adjust y position
+        x0=692+move_distance,  # Adjust x position
+        y0=220     # Adjust y position
+    ),
+)
+
+# Add a line between the two images
+fig.add_shape(
+    type="line",
+    x0=300,
+    y0=233,
+    x1=692+move_distance,
+    y1=233,
+    line=dict(
+        color="blue",
+        width=2,
+    ))
+
+# Add small leged with moved distance
+# fig.add_annotation(
+#     x=0.5,
+#     y=0.9,
+#     xref="paper",
+#     yref="paper",
+#     text=move_text,
+#     showarrow=False,
+#     font=dict(
+#         size=16,
+#         color="black"
+#     )
+# )
+
+# Add annotation
 fig.add_annotation(
-    x=0.5,
-    y=0.9,
-    xref="paper",
-    yref="paper",
+    x=500, y=290,
     text=move_text,
     showarrow=False,
-    font=dict(
-        size=16,
-        color="black"
-    )
+    arrowhead=0
 )
+
 
 # Customize the layout
 fig.update_layout(
